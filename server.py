@@ -15,24 +15,40 @@ Run locally with:
 Then point Claude Desktop to it via claude_desktop_config.json (see README.md).
 """
 
-import json
+import os
 import random
+
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 # ---------------------------------------------------------------------------
 # Server bootstrap
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP(
-    name="rwe-life-sciences"
-)
-
 # ---------------------------------------------------------------------------
 # Synthetic data layer
 # ---------------------------------------------------------------------------
 
+HOST = os.getenv("MCP_HOST", "127.0.0.1")
+PORT = int(os.getenv("MCP_PORT", "9090"))
+TRANSPORT = os.getenv("MCP_TRANSPORT", "streamable-http")
+
+mcp = FastMCP(name="rwe-life-sciences", log_level="INFO", host=HOST, port=PORT)
 SEED = 42
 random.seed(SEED)
+
+
+@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+async def health_check(request: Request) -> JSONResponse:
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "rwe-life-sciences",
+            "transport": TRANSPORT,
+            "mcp_endpoint": "/mcp",
+        }
+    )
 
 AGE_GROUPS = ["0-17", "18-34", "35-49", "50-64", "65-74", "75+"]
 GENDERS = ["Male", "Female", "Unknown/Other"]
@@ -309,4 +325,9 @@ def _age_weight(age_group: str) -> float:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    mcp.run()
+    if TRANSPORT not in {"stdio", "sse", "streamable-http"}:
+        raise ValueError(
+            "MCP_TRANSPORT must be one of: stdio, sse, streamable-http"
+        )
+
+    mcp.run(transport=TRANSPORT)
