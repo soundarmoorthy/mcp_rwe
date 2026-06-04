@@ -337,21 +337,41 @@ if __name__ == "__main__":
             "MCP_TRANSPORT must be one of: stdio, sse, streamable-http"
         )
 
-    # Build optional SSL kwargs for uvicorn when cert files are provided
-    ssl_kwargs: dict = {}
-    if SSL_CERTFILE and SSL_KEYFILE:
+    use_https = bool(SSL_CERTFILE and SSL_KEYFILE)
+
+    if use_https:
+        assert SSL_CERTFILE and SSL_KEYFILE  # narrow types for type-checker
         if not os.path.isfile(SSL_CERTFILE):
             raise FileNotFoundError(f"SSL_CERTFILE not found: {SSL_CERTFILE}")
         if not os.path.isfile(SSL_KEYFILE):
             raise FileNotFoundError(f"SSL_KEYFILE not found: {SSL_KEYFILE}")
-        ssl_kwargs = {"ssl_certfile": SSL_CERTFILE, "ssl_keyfile": SSL_KEYFILE}
-        scheme = "https"
-    else:
-        scheme = "http"
 
-    if ssl_kwargs:
-        print(f"🔒 HTTPS enabled  →  {scheme}://{HOST}:{PORT}/mcp")
-    else:
-        print(f"🌐 HTTP (no TLS)  →  {scheme}://{HOST}:{PORT}/mcp")
+    if use_https and TRANSPORT == "streamable-http":
+        # FastMCP.run() doesn't expose SSL options, so we drive uvicorn directly
+        # (mirroring what FastMCP.run_streamable_http_async does internally).
+        import asyncio
+        import uvicorn
 
-    mcp.run(transport=TRANSPORT, **ssl_kwargs)
+        assert SSL_CERTFILE and SSL_KEYFILE  # already validated above
+        cert, key = SSL_CERTFILE, SSL_KEYFILE
+
+        print(f"🔒 HTTPS enabled  →  https://{HOST}:{PORT}/mcp")
+
+        async def _serve_https() -> None:
+            starlette_app = mcp.streamable_http_app()
+            config = uvicorn.Config(
+                starlette_app,
+                host=HOST,
+                port=PORT,
+                log_level="info",
+                ssl_certfile=cert,
+                ssl_keyfile=key,
+            )
+            server = uvicorn.Server(config)
+            await server.serve()
+
+        import asyncio
+        asyncio.run(_serve_https())
+    else:
+        print(f"🌐 HTTP (no TLS)  →  http://{HOST}:{PORT}/mcp")
+        mcp.run(transport=TRANSPORT)
