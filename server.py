@@ -8,11 +8,12 @@ real-world data across multiple dimensions:
   • US Geography (Census region / state)
   • Longitudinal year (2018-2024)
 
-Run locally with:
-    pip install mcp
+Run locally over HTTP with:
+    pip install -r requirements.txt
     python server.py
 
-Then point Claude Desktop to it via claude_desktop_config.json (see README.md).
+The MCP endpoint is http://127.0.0.1:9090/mcp and health is available at
+http://127.0.0.1:9090/health. Set MCP_TRANSPORT=stdio for stdio clients.
 """
 
 import os
@@ -39,16 +40,17 @@ SEED = 42
 random.seed(SEED)
 
 
-@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
-async def health_check(request: Request) -> JSONResponse:
-    return JSONResponse(
-        {
-            "status": "ok",
-            "service": "rwe-life-sciences",
-            "transport": TRANSPORT,
-            "mcp_endpoint": "/mcp",
-        }
-    )
+# @mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+# async def health_check(_request: Request) -> JSONResponse:
+#     return JSONResponse(
+#         {
+#             "status": "ok",
+#             "service": "rwe-life-sciences",
+#             "transport": TRANSPORT,
+#             "mcp_endpoint": "/mcp",
+#         }
+#     )
+#
 
 AGE_GROUPS = ["0-17", "18-34", "35-49", "50-64", "65-74", "75+"]
 GENDERS = ["Male", "Female", "Unknown/Other"]

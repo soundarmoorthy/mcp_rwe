@@ -31,8 +31,17 @@ pip install -r requirements.txt
 python server.py
 ```
 
-The server starts on **stdio** (the MCP standard transport) and is ready
-for Claude Desktop to connect.
+The server starts on **Streamable HTTP** at:
+
+- MCP endpoint: `http://127.0.0.1:9090/mcp`
+- Health endpoint: `http://127.0.0.1:9090/health`
+
+You can override the bind address, port, or transport:
+
+```bash
+MCP_HOST=0.0.0.0 MCP_PORT=9090 python server.py
+MCP_TRANSPORT=stdio python server.py
+```
 
 ---
 
@@ -53,7 +62,9 @@ Add the server entry below (replace `/absolute/path/to/` with your actual path):
     "rwe-life-sciences": {
       "command": "python",
       "args": ["/absolute/path/to/rwe_mcp_server/server.py"],
-      "env": {}
+      "env": {
+        "MCP_TRANSPORT": "stdio"
+      }
     }
   }
 }
@@ -67,7 +78,9 @@ If you use a virtual-environment interpreter:
     "rwe-life-sciences": {
       "command": "/absolute/path/to/.venv/bin/python",
       "args": ["/absolute/path/to/rwe_mcp_server/server.py"],
-      "env": {}
+      "env": {
+        "MCP_TRANSPORT": "stdio"
+      }
     }
   }
 }
