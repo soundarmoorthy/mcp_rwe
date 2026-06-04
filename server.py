@@ -340,7 +340,6 @@ if __name__ == "__main__":
     # Build optional SSL kwargs for uvicorn when cert files are provided
     ssl_kwargs: dict = {}
     if SSL_CERTFILE and SSL_KEYFILE:
-        import ssl as _ssl
         if not os.path.isfile(SSL_CERTFILE):
             raise FileNotFoundError(f"SSL_CERTFILE not found: {SSL_CERTFILE}")
         if not os.path.isfile(SSL_KEYFILE):
