@@ -35,6 +35,11 @@ HOST = os.getenv("MCP_HOST", "127.0.0.1")
 PORT = int(os.getenv("MCP_PORT", "9090"))
 TRANSPORT = os.getenv("MCP_TRANSPORT", "streamable-http")
 
+# Optional TLS – set these env vars to enable HTTPS locally:
+#   SSL_CERTFILE=certs/localhost.pem SSL_KEYFILE=certs/localhost-key.pem
+SSL_CERTFILE = os.getenv("SSL_CERTFILE")
+SSL_KEYFILE  = os.getenv("SSL_KEYFILE")
+
 mcp = FastMCP(name="rwe-life-sciences", log_level="INFO", host=HOST, port=PORT)
 SEED = 42
 random.seed(SEED)
@@ -332,4 +337,22 @@ if __name__ == "__main__":
             "MCP_TRANSPORT must be one of: stdio, sse, streamable-http"
         )
 
-    mcp.run(transport=TRANSPORT)
+    # Build optional SSL kwargs for uvicorn when cert files are provided
+    ssl_kwargs: dict = {}
+    if SSL_CERTFILE and SSL_KEYFILE:
+        import ssl as _ssl
+        if not os.path.isfile(SSL_CERTFILE):
+            raise FileNotFoundError(f"SSL_CERTFILE not found: {SSL_CERTFILE}")
+        if not os.path.isfile(SSL_KEYFILE):
+            raise FileNotFoundError(f"SSL_KEYFILE not found: {SSL_KEYFILE}")
+        ssl_kwargs = {"ssl_certfile": SSL_CERTFILE, "ssl_keyfile": SSL_KEYFILE}
+        scheme = "https"
+    else:
+        scheme = "http"
+
+    if ssl_kwargs:
+        print(f"🔒 HTTPS enabled  →  {scheme}://{HOST}:{PORT}/mcp")
+    else:
+        print(f"🌐 HTTP (no TLS)  →  {scheme}://{HOST}:{PORT}/mcp")
+
+    mcp.run(transport=TRANSPORT, **ssl_kwargs)
