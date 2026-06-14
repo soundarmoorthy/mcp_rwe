@@ -1,0 +1,9 @@
+  "mcpServers": {
+    "localserver": {
+      "command": "mcp-proxy",
+      "args": [
+        "http://127.0.0.1:9090/mcp",
+        "--transport=streamablehttp"
+      ]
+    }
+  }
