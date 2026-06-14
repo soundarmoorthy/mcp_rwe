@@ -1,0 +1,7 @@
+[project]
+name = "mcp-rwe"
+version = "0.1.0"
+dependencies = [
+    "mcp>=0.1.0",
+    "mcp_proxy"
+]
